@@ -8,14 +8,11 @@ chrome.tabs.onUpdated.addListener(
 	function (tabId, changeInfo, tab) {
 		// read changeInfo data and do something with it
 		// like send the new url to contentscripts.js
-		if (changeInfo.url && changeInfo.url.indexOf("linkedin.com") > -1) {
-			chrome.browserAction.setBadgeText({ text: "notes" });
-			chrome.tabs.sendMessage(tabId, {
-				message: 'hello!',
-				url: changeInfo.url
-			})
+		if (changeInfo.url && changeInfo.url.indexOf("linkedin.com/in/") > -1) {
+			chrome.browserAction.setBadgeBackgroundColor({ color: "red" })
+			chrome.browserAction.setBadgeText({ text: "Nwf" });
 		}
-		if (changeInfo.url && changeInfo.url.indexOf("linkedin.com") == -1) {
+		else if (changeInfo.url && changeInfo.url.indexOf("linkedin.com/in/") == -1) {
 			chrome.browserAction.setBadgeText({ text: null });
 		}
 	}
