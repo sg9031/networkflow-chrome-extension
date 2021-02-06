@@ -11,11 +11,16 @@ export default class Popup extends React.Component {
 		password: '',
 		url: '',
 		content: '',
-		importance: 'Choose a Importance',
+		importance: 'Choose an itmportance',
 		show: true,
+		signup: false,
 	}
 
 	componentDidMount = () => {
+		this.init();
+	}
+
+	init() {
 		const email = localStorage.getItem('email');
 		const url = localStorage.getItem('url');
 		if (url.search('https://www.linkedin.com/in') < 0) {
@@ -52,9 +57,23 @@ export default class Popup extends React.Component {
 		}
 	}
 
+	async signup(email, password) {
+		let form = new FormData();
+		form.append('email', email);
+		form.append('password', password);
+		const req = (await axios.post(`${api}/users/inscription`, form)).data;
+		if (req['res']) {
+			this.setState({ connected: true, message: '' });
+			localStorage.setItem('email', email);
+		}
+		else {
+			this.setState({ message: req['message'] });
+		}
+	}
+
 	deconnect = () => {
 		localStorage.clear();
-		this.setState({ connected: false });
+		this.init();
 	}
 
 	async save(content, importance) {
@@ -113,24 +132,50 @@ export default class Popup extends React.Component {
 										<option value="Slightly">Slightly</option>
 										<option value="Not at all">Not at all</option>
 									</select>
-									<button className="btn btn-success" onClick={() => this.save(this.state.content, this.state.importance)}>Enregistrer</button>
+									<button className="btn btn-success" onClick={() => this.save(this.state.content, this.state.importance)}>Save</button>
 									<div style={{ marginTop: '2%' }}>
-										<button className="btn btn-danger" onClick={() => this.deconnect()}>Deconnexion</button>
+										<button className="btn btn-danger" onClick={() => this.deconnect()}>Disconnect</button>
 									</div>
 								</section>
 							) : (
 									<section className="container-fluid text-center">
-										<div className="form-group">
-											<label>Email</label>
-											<input type="email" className="form-control" value={this.state.email} onChange={e => this.setState({ email: e.target.value })} />
-										</div>
-										<div className="form-group">
-											<label>Password</label>
-											<input type="password" className="form-control" value={this.state.password} onChange={e => this.setState({ password: e.target.value })} />
-										</div>
-										<div className="form-group">
-											<button className="btn btn-dark" onClick={() => this.submit(this.state.email, this.state.password)}>Valider</button>
-										</div>
+										{this.state.signup === true ? (
+											<div>
+												<div className="form-group">
+													<h3>Signup Form</h3>
+												</div>
+												<div className="form-group">
+													<label>Email</label>
+													<input type="email" className="form-control" value={this.state.email} onChange={e => this.setState({ email: e.target.value })} />
+												</div>
+												<div className="form-group">
+													<label>Password</label>
+													<input type="password" className="form-control" value={this.state.password} onChange={e => this.setState({ password: e.target.value })} />
+												</div>
+												<div className="form-group">
+													<button className="btn btn-dark" onClick={() => this.signup(this.state.email, this.state.password)}>Valider</button>
+												</div>
+												<p onClick={() => this.setState({ signup: false })}><a><u>I have an account</u></a></p>
+											</div>
+										) : (
+												<div>
+													<div className="form-group">
+														<h3>Signin Form</h3>
+													</div>
+													<div className="form-group">
+														<label>Email</label>
+														<input type="email" className="form-control" value={this.state.email} onChange={e => this.setState({ email: e.target.value })} />
+													</div>
+													<div className="form-group">
+														<label>Password</label>
+														<input type="password" className="form-control" value={this.state.password} onChange={e => this.setState({ password: e.target.value })} />
+													</div>
+													<div className="form-group">
+														<button className="btn btn-dark" onClick={() => this.submit(this.state.email, this.state.password)}>Valider</button>
+													</div>
+													<p onClick={() => this.setState({ signup: true })}><a><u>Create an account</u></a></p>
+												</div>
+											)}
 									</section>
 								)}
 						</section>

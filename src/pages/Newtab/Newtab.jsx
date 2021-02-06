@@ -4,15 +4,47 @@ import './Newtab.scss';
 import axios from 'axios';
 import api from '../Popup/api';
 import { Table } from 'react-bootstrap';
-import { InstantSearch, SearchBox, Hits, Highlight } from 'react-instantsearch-dom';
+import { InstantSearch, SearchBox, Hits, Highlight, Snippet } from 'react-instantsearch-dom';
 import instantMeiliSearch from '@meilisearch/instant-meilisearch';
+import logo from '../../assets/img/networkflowpngslimmm.png';
 
 const searchClient = instantMeiliSearch(
 	'http://127.0.0.1:7700',
 );
 
 function Hit(props) {
-	return <Highlight attribute="name" hit={props.hit} />;
+
+	return (
+		<>
+			{/* <div>
+				<p>{props.hit.content}</p>
+			</div> */}
+			<tr key={props.hit.id}>
+				<td>{deduction(props.hit.importance)}</td>
+				<td>{props.hit.profil.replaceAll('https://www.linkedin.com/in/', '').replaceAll('/', '')}</td>
+				<td>{props.hit.content}</td>
+			</tr>
+		</>
+	);
+}
+
+function deduction(importance) {
+	if (importance == 'A') {
+		return ('Very');
+	}
+	if (importance == 'B') {
+		return ('Fairly');
+	}
+	if (importance == 'C') {
+		return ('Neutral');
+	}
+	if (importance == 'D') {
+		return ('Slightly');
+	}
+	if (importance == 'E') {
+		return ('Not at all');
+	}
+	return ('Neutral');
 }
 
 export default class NewTab extends React.Component {
@@ -42,8 +74,14 @@ export default class NewTab extends React.Component {
 		const req = (await axios.get(`${api}/notes/read/all/${email}`)).data;
 		if (req['res']) {
 			this.setState({ data: req['data'] });
-			console.log('OK')
+			// this.add_data(req['data']);
 		}
+	}
+
+	async add_data(data) {
+		const req = (await axios.post('http://127.0.0.1:7700/indexes/notes/documents', data)).data;
+		console.log(req);
+		return (true);
 	}
 
 	deduction = (importance) => {
@@ -71,12 +109,15 @@ export default class NewTab extends React.Component {
 			<section className="container-fluid text-center">
 				{this.state.connected === true ? (
 					<div>
+						<div style={{ margin: '2%' }}>
+							<img src={logo} width={'50%'} />
+						</div>
 						<div className="container-fluid col-sm-4" style={{ paddingTop: '2%', paddingBottom: '2%' }}>
 							<label>Search:</label>
 							<input className="form-control" />
 						</div>
 						<div>
-							{/* <Table striped bordered hover>
+							<Table striped bordered hover>
 								<thead>
 									<tr>
 										<th>Importance</th>
@@ -85,6 +126,7 @@ export default class NewTab extends React.Component {
 									</tr>
 								</thead>
 								<tbody>
+									{/* <Hits hitComponent={Hit} /> */}
 									{this.state.data.map(x =>
 										<tr key={x.id}>
 											<td>{this.deduction(x.importance)}</td>
@@ -93,14 +135,8 @@ export default class NewTab extends React.Component {
 										</tr>
 									)}
 								</tbody>
-							</Table> */}
-							<InstantSearch
-								indexName="steam-video-games"
-								searchClient={searchClient}
-							>
-								<SearchBox />
-								<Hits hitComponent={Hit} />
-							</InstantSearch>
+							</Table>
+							{/* </InstantSearch> */}
 						</div>
 					</div>
 				) : (
