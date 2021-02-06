@@ -11,6 +11,7 @@ chrome.tabs.onUpdated.addListener(
 		if (changeInfo.url && changeInfo.url.indexOf("linkedin.com/in/") > -1) {
 			chrome.browserAction.setBadgeBackgroundColor({ color: "red" })
 			chrome.browserAction.setBadgeText({ text: "Nwf" });
+			// localStorage.setItem('url', changeInfo.url);
 		}
 		else if (changeInfo.url && changeInfo.url.indexOf("linkedin.com/in/") == -1) {
 			chrome.browserAction.setBadgeText({ text: null });
@@ -18,3 +19,14 @@ chrome.tabs.onUpdated.addListener(
 	}
 );
 
+chrome.tabs.onActivated.addListener(function (activeInfo) {
+	// how to fetch tab url using activeInfo.tabid
+	chrome.tabs.get(activeInfo.tabId, function (tab) {
+		try {
+			localStorage.setItem('url', tab.url);
+		}
+		catch (e) {
+			alert(e);
+		}
+	});
+});
