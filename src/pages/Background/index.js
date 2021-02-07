@@ -26,7 +26,7 @@ chrome.tabs.onActivated.addListener(function (activeInfo) {
 			localStorage.setItem('url', tab.url);
 		}
 		catch (e) {
-			alert(e);
+			console.log(e);
 		}
 	});
 });

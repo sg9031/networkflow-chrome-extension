@@ -4,29 +4,39 @@ import './Newtab.scss';
 import axios from 'axios';
 import api from '../Popup/api';
 import { Table } from 'react-bootstrap';
-import { InstantSearch, SearchBox, Hits, Highlight, Snippet } from 'react-instantsearch-dom';
+import { InstantSearch, SearchBox, Hits } from 'react-instantsearch-dom';
 import instantMeiliSearch from '@meilisearch/instant-meilisearch';
 import logo from '../../assets/img/networkflowpngslimmm.png';
+
+import { connectHitInsights } from 'react-instantsearch-dom';
+
+const Hit = ({ hit, insights }) => (
+	hit.map(x =>
+		<p>x.profil</p>
+	)
+);
+
+const HitWithInsights = connectHitInsights(window.aa)(Hit);
 
 const searchClient = instantMeiliSearch(
 	'http://127.0.0.1:7700',
 );
 
-function Hit(props) {
+// function Hit(props) {
 
-	return (
-		<>
-			{/* <div>
-				<p>{props.hit.content}</p>
-			</div> */}
-			<tr key={props.hit.id}>
-				<td>{deduction(props.hit.importance)}</td>
-				<td>{props.hit.profil.replaceAll('https://www.linkedin.com/in/', '').replaceAll('/', '')}</td>
-				<td>{props.hit.content}</td>
-			</tr>
-		</>
-	);
-}
+// 	return (
+// 		<>
+// 			{/* <div>
+// 				<p>{props.hit.content}</p>
+// 			</div> */}
+// 			<tr key={props.hit.id}>
+// 				<td>{deduction(props.hit.importance)}</td>
+// 				<td>{props.hit.profil.replaceAll('https://www.linkedin.com/in/', '').replaceAll('/', '')}</td>
+// 				<td>{props.hit.content}</td>
+// 			</tr>
+// 		</>
+// 	);
+// }
 
 function deduction(importance) {
 	if (importance == 'A') {
@@ -74,7 +84,7 @@ export default class NewTab extends React.Component {
 		const req = (await axios.get(`${api}/notes/read/all/${email}`)).data;
 		if (req['res']) {
 			this.setState({ data: req['data'] });
-			// this.add_data(req['data']);
+			this.add_data(req['data']);
 		}
 	}
 
@@ -103,6 +113,13 @@ export default class NewTab extends React.Component {
 		return ('Neutral');
 	}
 
+	async meili(search) {
+		const req = (await axios.post('http://127.0.0.1:7700/indexes/notes/search', {
+			'q': search,
+		})).data;
+		this.setState({ data: req['hits'] })
+	}
+
 
 	render() {
 		return (
@@ -114,29 +131,32 @@ export default class NewTab extends React.Component {
 						</div>
 						<div className="container-fluid col-sm-4" style={{ paddingTop: '2%', paddingBottom: '2%' }}>
 							<label>Search:</label>
-							<input className="form-control" />
+							<input className="form-control" onChange={e => this.meili(e.target.value)} />
 						</div>
 						<div>
-							<Table striped bordered hover>
-								<thead>
-									<tr>
-										<th>Importance</th>
-										<th>Profil</th>
-										<th>Content</th>
-									</tr>
-								</thead>
-								<tbody>
-									{/* <Hits hitComponent={Hit} /> */}
-									{this.state.data.map(x =>
-										<tr key={x.id}>
-											<td>{this.deduction(x.importance)}</td>
-											<td>{x.profil.replaceAll('https://www.linkedin.com/in/', '').replaceAll('/', '')}</td>
-											<td>{x.content}</td>
+							<InstantSearch
+								indexName="notes"
+								searchClient={searchClient}
+							>
+								<Table striped bordered hover>
+									<thead>
+										<tr>
+											<th>Importance</th>
+											<th>Profil</th>
+											<th>Content</th>
 										</tr>
-									)}
-								</tbody>
-							</Table>
-							{/* </InstantSearch> */}
+									</thead>
+									<tbody>
+										{this.state.data.map(x =>
+											<tr key={x.id}>
+												<td>{this.deduction(x.importance)}</td>
+												<td>{x.profil.replaceAll('https://www.linkedin.com/in/', '').replaceAll('/', '')}</td>
+												<td>{x.content}</td>
+											</tr>
+										)}
+									</tbody>
+								</Table>
+							</InstantSearch>
 						</div>
 					</div>
 				) : (
