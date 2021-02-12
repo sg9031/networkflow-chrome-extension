@@ -14,6 +14,8 @@ export default class Popup extends React.Component {
 		importance: 'Choose an importance',
 		show: true,
 		signup: false,
+		category: 'Choose a category',
+		loading: false,
 	}
 
 	componentDidMount = () => {
@@ -34,13 +36,45 @@ export default class Popup extends React.Component {
 	}
 
 	async readData(email, url) {
-		let form = new FormData();
-		form.append('email', email);
-		form.append('profil', url);
-		const req = (await axios.post(`${api}/notes/read`, form)).data;
-		if (req['res']) {
-			this.setState({ content: req['data'].content });
+		try {
+			let form = new FormData();
+			form.append('email', email);
+			form.append('profil', url);
+			const req = (await axios.post(`${api}/notes/read`, form)).data;
+			if (req['res']) {
+				const data = req['data'];
+				this.setState({
+					content: data.content,
+					category: data.category,
+					importance: this.deduit_importance_reverse(data.importance)
+				});
+			}
 		}
+		catch (e) {
+			alert(e)
+		}
+	}
+
+	deduit_importance_reverse = (importance) => {
+		if (importance == 'C') {
+			return ('Neutral');
+		}
+		if (importance == 'A') {
+			return ('Very');
+		}
+		if (importance == 'B') {
+			return ('Fairly');
+		}
+		if (importance == 'C') {
+			return ('Neutral');
+		}
+		if (importance == 'D') {
+			return ('Slightly');
+		}
+		if (importance == 'E') {
+			return ('Not at all');
+		}
+		return ('Neutral');
 	}
 
 	async submit(email, password) {
@@ -76,13 +110,18 @@ export default class Popup extends React.Component {
 		this.init();
 	}
 
-	async save(content, importance) {
+	async save(content, importance, category) {
+		this.setState({ loading: true });
 		let form = new FormData();
 		form.append('email', this.state.email);
 		form.append('profil', this.state.url);
 		form.append('content', content);
 		form.append('importance', this.deduit_importance(importance));
+		form.append('category', category);
 		const req = (await axios.post(`${api}/notes/add`, form)).data;
+		setTimeout(() => {
+			this.setState({ loading: false });
+		}, 500);
 	}
 
 	deduit_importance = (importance) => {
@@ -107,6 +146,10 @@ export default class Popup extends React.Component {
 		return ('C');
 	}
 
+	capitalizeFirstLetter(string) {
+		return string.charAt(0).toUpperCase() + string.slice(1);
+	}
+
 	render() {
 		return (
 			<>
@@ -120,22 +163,43 @@ export default class Popup extends React.Component {
 								<p><b>{this.state.message}</b></p>
 							</section>
 							{this.state.connected === true ? (
-								<section className="container-fluid text-center">
-									<p>You are connected</p>
-									<textarea className="form-control" rows={7} value={this.state.content} onChange={e => this.setState({ content: e.target.value })} />
-									<label>Importance</label>
-									<select value={this.state.importance} onChange={e => this.setState({ importance: e.target.value })} className="form-control">
-										<option value={this.state.importance}>{this.state.importance}</option>
-										<option value="Very">Very</option>
-										<option value="Fairly">Fairly</option>
-										<option value="Neutral">Neutral</option>
-										<option value="Slightly">Slightly</option>
-										<option value="Not at all">Not at all</option>
-									</select>
-									<button className="btn btn-success" onClick={() => this.save(this.state.content, this.state.importance)}>Save</button>
-									<div style={{ marginTop: '2%' }}>
-										<button className="btn btn-danger" onClick={() => this.deconnect()}>Disconnect</button>
+								<section className="container-fluid text-center" style={{ paddingBottom: '2%' }}>
+									<div>
+										{this.state.loading === true &&
+											<img src="https://media4.giphy.com/media/3oEjI6SIIHBdRxXI40/200.gif" width="20%" />
+										}
 									</div>
+									<div className="form-group">
+										<label>Your notes</label>
+										<textarea className="form-control" rows={7} value={this.state.content} onChange={e => this.setState({ content: e.target.value })} />
+									</div>
+									<div className="form-group">
+										<label>Importance</label>
+										<select value={this.state.importance} onChange={e => this.setState({ importance: e.target.value })} className="form-control">
+											<option value={this.state.importance}>{this.state.importance}</option>
+											<option value="Very">Very</option>
+											<option value="Fairly">Fairly</option>
+											<option value="Neutral">Neutral</option>
+											<option value="Slightly">Slightly</option>
+											<option value="Not at all">Not at all</option>
+										</select>
+									</div>
+									<div className="form-group">
+										<label>Category</label>
+										<select value={this.state.category} onChange={e => this.setState({ category: e.target.value })} className="form-control">
+											<option value={this.state.category}>{this.capitalizeFirstLetter(this.state.category)}</option>
+											<option value="fundraising">Fundraising</option>
+											<option value="lead">Lead</option>
+											<option value="recruiting">Recruiting</option>
+											<option value="neutral">Neutral</option>
+										</select>
+									</div>
+									<div className="form-group">
+										<button className="btn btn-success" onClick={() => this.save(this.state.content, this.state.importance, this.state.category)}>Save</button>
+									</div>
+									{/* <div style={{ marginTop: '2%' }}>
+										<button className="btn btn-danger" onClick={() => this.deconnect()}>Disconnect</button>
+									</div> */}
 								</section>
 							) : (
 									<section className="container-fluid text-center">
