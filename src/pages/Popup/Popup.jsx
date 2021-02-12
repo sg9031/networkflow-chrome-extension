@@ -11,7 +11,7 @@ export default class Popup extends React.Component {
 		password: '',
 		url: '',
 		content: '',
-		importance: 'Choose an itmportance',
+		importance: 'Choose an importance',
 		show: true,
 		signup: false,
 	}
