@@ -85,6 +85,7 @@ export default class Popup extends React.Component {
 		if (req['res']) {
 			this.setState({ connected: true, message: '' });
 			localStorage.setItem('email', email);
+			this.init();
 		}
 		else {
 			this.setState({ message: req['message'] });
@@ -99,6 +100,7 @@ export default class Popup extends React.Component {
 		if (req['res']) {
 			this.setState({ connected: true, message: '' });
 			localStorage.setItem('email', email);
+			this.init();
 		}
 		else {
 			this.setState({ message: req['message'] });
