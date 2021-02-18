@@ -1,7 +1,10 @@
 import React from 'react';
 import './Popup.css';
-import api from './api';
+import api from '../api';
 import axios from 'axios';
+import auth from '../services/auth';
+import relations from '../services/relations';
+import names from '../utils/names';
 
 export default class Popup extends React.Component {
 
@@ -16,6 +19,8 @@ export default class Popup extends React.Component {
 		signup: false,
 		category: 'Choose a category',
 		loading: false,
+		vanity_name: '',
+		created: false,
 	}
 
 	componentDidMount = () => {
@@ -24,34 +29,41 @@ export default class Popup extends React.Component {
 
 	init() {
 		const email = localStorage.getItem('email');
-		const url = localStorage.getItem('url');
+		const url = decodeURI(localStorage.getItem('url'));
 		if (url.search('https://www.linkedin.com/in') < 0) {
 			this.setState({ show: false });
 			return;
 		}
+		const vanity_name = names.get_vanityname_from_url(url)
+		this.setState({ vanity_name: vanity_name });
 		if (email) {
 			this.setState({ connected: true, url: url, email: email });
-			this.readData(email, url);
+			this.readData(vanity_name);
 		}
 	}
 
-	async readData(email, url) {
-		try {
-			let form = new FormData();
-			form.append('email', email);
-			form.append('profil', url);
-			const req = (await axios.post(`${api}/notes/read`, form)).data;
-			if (req['res']) {
-				const data = req['data'];
-				this.setState({
-					content: data.content,
-					category: data.category,
-					importance: this.deduit_importance_reverse(data.importance)
-				});
+	async signIn(email, password) {
+		if (await auth.signin_email(email, password)) {
+			this.setState({ connected: true })
+		}
+	}
+
+	async signUp(email, password) {
+		if (await auth.signup_email(email, password)) {
+			if (await auth.get_access_token(localStorage.getItem('refresh'))) {
+				this.setState({ connected: true });
 			}
 		}
-		catch (e) {
-			alert(e)
+	}
+
+	async readData(vanity_name) {
+		const data = await relations.get_relation_by_vanity_name(vanity_name);
+		if (data) {
+			this.setState({
+				content: data.notes,
+				importance: this.deduit_importance_reverse(data.importance),
+				created: true,
+			});
 		}
 	}
 
@@ -77,36 +89,6 @@ export default class Popup extends React.Component {
 		return ('Neutral');
 	}
 
-	async submit(email, password) {
-		let form = new FormData();
-		form.append('email', email);
-		form.append('password', password);
-		const req = (await axios.post(`${api}/users/connexion`, form)).data;
-		if (req['res']) {
-			this.setState({ connected: true, message: '' });
-			localStorage.setItem('email', email);
-			this.init();
-		}
-		else {
-			this.setState({ message: req['message'] });
-		}
-	}
-
-	async signup(email, password) {
-		let form = new FormData();
-		form.append('email', email);
-		form.append('password', password);
-		const req = (await axios.post(`${api}/users/inscription`, form)).data;
-		if (req['res']) {
-			this.setState({ connected: true, message: '' });
-			localStorage.setItem('email', email);
-			this.init();
-		}
-		else {
-			this.setState({ message: req['message'] });
-		}
-	}
-
 	deconnect = () => {
 		localStorage.clear();
 		this.init();
@@ -114,13 +96,12 @@ export default class Popup extends React.Component {
 
 	async save(content, importance, category) {
 		this.setState({ loading: true });
-		let form = new FormData();
-		form.append('email', this.state.email);
-		form.append('profil', this.state.url);
-		form.append('content', content);
-		form.append('importance', this.deduit_importance(importance));
-		form.append('category', category);
-		const req = (await axios.post(`${api}/notes/add`, form)).data;
+		if (this.state.created) {
+			await relations.update_relation(this.state.vanity_name, this.deduit_importance(importance), content);
+		}
+		else {
+			await relations.create_relation(this.state.vanity_name, this.deduit_importance(importance), content);
+		}
 		setTimeout(() => {
 			this.setState({ loading: false });
 		}, 500);
@@ -131,21 +112,21 @@ export default class Popup extends React.Component {
 			return ('C');
 		}
 		if (importance == 'Very') {
-			return ('A');
+			return ('4');
 		}
 		if (importance == 'Fairly') {
-			return ('B');
+			return ('3');
 		}
 		if (importance == 'Neutral') {
-			return ('C');
+			return ('2');
 		}
 		if (importance == 'Slightly') {
-			return ('D');
+			return ('1');
 		}
 		if (importance == 'Not at all') {
-			return ('E');
+			return ('0');
 		}
-		return ('C');
+		return ('2');
 	}
 
 	capitalizeFirstLetter(string) {
@@ -199,12 +180,10 @@ export default class Popup extends React.Component {
 									<div className="form-group">
 										<button className="btn btn-success" onClick={() => this.save(this.state.content, this.state.importance, this.state.category)}>Save</button>
 									</div>
-									{/* <div style={{ marginTop: '2%' }}>
-										<button className="btn btn-danger" onClick={() => this.deconnect()}>Disconnect</button>
-									</div> */}
 								</section>
 							) : (
 									<section className="container-fluid text-center">
+										<p>{this.state.message}</p>
 										{this.state.signup === true ? (
 											<div>
 												<div className="form-group">
@@ -219,7 +198,7 @@ export default class Popup extends React.Component {
 													<input type="password" className="form-control" value={this.state.password} onChange={e => this.setState({ password: e.target.value })} />
 												</div>
 												<div className="form-group">
-													<button className="btn btn-dark" onClick={() => this.signup(this.state.email, this.state.password)}>Valider</button>
+													<button className="btn btn-dark" onClick={() => this.signUp(this.state.email, this.state.password)}>Valider</button>
 												</div>
 												<p onClick={() => this.setState({ signup: false })}><a><u>I have an account</u></a></p>
 											</div>
@@ -237,7 +216,7 @@ export default class Popup extends React.Component {
 														<input type="password" className="form-control" value={this.state.password} onChange={e => this.setState({ password: e.target.value })} />
 													</div>
 													<div className="form-group">
-														<button className="btn btn-dark" onClick={() => this.submit(this.state.email, this.state.password)}>Valider</button>
+														<button className="btn btn-dark" onClick={() => this.signIn(this.state.email, this.state.password)}>Valider</button>
 													</div>
 													<p onClick={() => this.setState({ signup: true })}><a><u>Create an account</u></a></p>
 												</div>
