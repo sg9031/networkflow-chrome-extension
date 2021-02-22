@@ -1,6 +1,6 @@
 {
 	"name": "networkflow-chrome-extension",
-	"version": "1.2.0",
+	"version": "1.2.1",
 	"description": "A chrome extension that allows you to take notes about your LinkedIn contacts.",
 	"license": "MIT",
 	"repository": {
