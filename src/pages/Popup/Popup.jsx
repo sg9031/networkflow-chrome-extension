@@ -21,6 +21,7 @@ export default class Popup extends React.Component {
 		loading: false,
 		vanity_name: '',
 		created: false,
+		web_app_url: '',
 	}
 
 	componentDidMount = () => {
@@ -37,7 +38,9 @@ export default class Popup extends React.Component {
 		const vanity_name = names.get_vanityname_from_url(url)
 		this.setState({ vanity_name: vanity_name });
 		if (email) {
-			this.setState({ connected: true, url: url, email: email });
+			const token = localStorage.getItem('refresh')
+			const web_app_url = `https://web.networkflow.app?token=${token}&email=${email}`;
+			this.setState({ connected: true, url: url, email: email, web_app_url: web_app_url });
 			this.readData(vanity_name);
 		}
 	}
@@ -51,7 +54,7 @@ export default class Popup extends React.Component {
 	async signUp(email, password) {
 		if (await auth.signup_email(email, password)) {
 			if (await auth.get_access_token(localStorage.getItem('refresh'))) {
-				this.setState({ connected: true });
+				this.setState({ connected: true })
 			}
 		}
 	}
@@ -147,6 +150,14 @@ export default class Popup extends React.Component {
 							</section>
 							{this.state.connected === true ? (
 								<section className="container-fluid text-center" style={{ paddingBottom: '2%' }}>
+									<div style={{ textAlign: 'right' }} >
+										<a href={this.state.web_app_url} target='_blank'>
+											<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-in-up-right" viewBox="0 0 16 16">
+												<path fill-rule="evenodd" d="M6.364 13.5a.5.5 0 0 0 .5.5H13.5a1.5 1.5 0 0 0 1.5-1.5v-10A1.5 1.5 0 0 0 13.5 1h-10A1.5 1.5 0 0 0 2 2.5v6.636a.5.5 0 1 0 1 0V2.5a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 .5.5v10a.5.5 0 0 1-.5.5H6.864a.5.5 0 0 0-.5.5z" />
+												<path fill-rule="evenodd" d="M11 5.5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793l-8.147 8.146a.5.5 0 0 0 .708.708L10 6.707V10.5a.5.5 0 0 0 1 0v-5z" />
+											</svg>
+										</a>
+									</div>
 									<div>
 										{this.state.loading === true &&
 											<img src="https://media4.giphy.com/media/3oEjI6SIIHBdRxXI40/200.gif" width="20%" />
